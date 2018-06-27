@@ -24,7 +24,7 @@ BUCKET=kickerbox-storage
 # several functions, currently there is no way to deploy them jointly,
 # transactionally, or quickly.
 
-FNAME=result
+FNAME=api
 gcloud beta functions deploy $FNAME --region $REGION --stage-bucket $BUCKET --project $PROJ --trigger-http
 
 # Upon success, it will print the URL.
