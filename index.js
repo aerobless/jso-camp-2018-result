@@ -8,7 +8,8 @@ router.route('/kickerbox/:id').get(getKickerbox);
 router.route('/result').get(getResults).post(postResult);
 router.route('/result/:id').get(getResult);
 
-router.route('/test').get(testDb);
+router.route('/challenge').get(getChallenges).post(postChallenge);
+router.route('/challenge/:id').get(getChallenge).put(putChallenge);
 
 router.notFound(handleError);
 
@@ -22,13 +23,8 @@ const pool = mysql.createPool({
 
 let kickerboxes = [
     {id: 0, name: 'PrettyKickerbox', location: 'Zühlke Tower', model: '1337-ABC'},
-    {id: 1, name: 'UglyKickerbox', location: 'Elsewhere', model: 'R241'}
-];
-
-let mockedResults = [
-    {id: 0, homeTeamScore: 2, visitorTeamScore: 0, reservationId: 42},
-    {id: 0, homeTeamScore: 4, visitorTeamScore: 3, reservationId: 11},
-    {id: 0, homeTeamScore: 1, visitorTeamScore: 4, reservationId: 0}
+    {id: 1, name: 'UglyKickerbox', location: 'Elsewhere', model: 'R241'},
+    {id: 2, name: 'AustriaKicker', location: 'Alpenhotel Montafon', model: 'R2-D2'}
 ];
 
 let notFoundMsg = {
@@ -72,12 +68,6 @@ function getResults(req, res) {
     });
 }
 
-function testDb(req, res) {
-    pool.query('SELECT NOW() AS now', (error, results, fields) => {
-        res.send(results);
-    });
-}
-
 function getResult(req, res) {
     pool.query(`select * from result where id=${req.params.id};`, (error, results) => {
         if (error) {
@@ -104,6 +94,62 @@ function postResult(req, res) {
 
         res.status(201);
         res.send(result);
+    } else {
+        res.status(400);
+        res.send('400 - Bad Request');
+    }
+}
+
+function getChallenges(req, res) {
+    pool.query('select * from challenge;', (error, results) => {
+        if (error) {
+            console.log(error);
+        }
+        res.send(results);
+    });
+}
+
+function getChallenge(req, res) {
+    pool.query(`select * from challenge where id=${req.params.id};`, (error, results) => {
+        if (error) {
+            console.log(error);
+        }
+        res.send(results);
+    });
+}
+
+function postChallenge(req, res) {
+    const challengerId = JSON.parse(req.body).challengerId;
+    const challengeeId = JSON.parse(req.body).challengeeId;
+    const status = JSON.parse(req.body).status.toUpperCase();
+
+    if (!isEmpty(challengerId) && !isEmpty(challengeeId) && !isEmpty(status)) {
+        const insertQuery = `INSERT INTO challenge(challengerId, challengeeId, status, dateOfChallenge) VALUES(${challengerId},${challengeeId},'${status}', NOW());`;
+        pool.query(insertQuery); //TODO: handle result with callback
+
+        let result = {
+            challengerId: challengerId,
+            challengeeId: challengeeId,
+            status: status
+        };
+
+        res.status(201);
+        res.send(insertQuery);
+    } else {
+        res.status(400);
+        res.send('400 - Bad Request');
+    }
+}
+
+function putChallenge(req, res) {
+    const status = JSON.parse(req.body).status.toUpperCase();
+
+    if (!isEmpty(status)) {
+        const updateQuery = `UPDATE challenge SET status='${status}' WHERE id=${req.params.id};`;
+        pool.query(updateQuery); //TODO: handle result with callback
+
+        res.status(201);
+        res.send('updated');
     } else {
         res.status(400);
         res.send('400 - Bad Request');
