@@ -7,7 +7,6 @@ set -e
 
 PROJ=jso-camp
 
-# This region seems to work well for me, all the others are presumably about the same.
 REGION=europe-west1
 
 # GCF has several ways to deploy. The path that makes the most sense using a
@@ -25,6 +24,7 @@ BUCKET=kickerbox-storage
 # transactionally, or quickly.
 
 FNAME=api
+
 gcloud beta functions deploy $FNAME --region $REGION --stage-bucket $BUCKET --project $PROJ --trigger-http
 
 # Upon success, it will print the URL.

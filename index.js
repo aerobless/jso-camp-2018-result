@@ -1,23 +1,6 @@
 const router = require('gcf-api-router')();
 const mysql = require('mysql');
-const request = require('request');
-
-const connectionName = 'jso-camp:europe-west1:kickerbox-cf';
-const dbUser = 'kickboxer';
-const dbPass = ''; //replace me
-const dbName = 'kickerbox';
-
-const test = getTest('test');
-
-
-function getTest(name) {
-    request('http://www.google.com', function (error, response, body) {
-        console.log('error:', error); // Print the error if one occurred
-        console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
-        console.log('body:', body); // Print the HTML for the Google homepage.
-        return body;
-    });
-}
+const config = require('./config')['production'];
 
 router.route('/kickerbox').get(getKickerboxes);
 router.route('/kickerbox/:id').get(getKickerbox);
@@ -31,10 +14,10 @@ router.notFound(handleError);
 
 const pool = mysql.createPool({
     connectionLimit: 1,
-    socketPath: '/cloudsql/' + connectionName,
-    user: dbUser,
-    password: dbPass,
-    database: dbName
+    socketPath: '/cloudsql/' + config.database.connection,
+    user: config.database.user,
+    password: config.database.password,
+    database: config.database.name
 });
 
 let kickerboxes = [
@@ -85,23 +68,8 @@ function getResults(req, res) {
 }
 
 function testDb(req, res) {
-
-    res.send(test);
-
-    /*request('http://metadata.google.internal/computeMetadata/v1/project/attributes/db-name" -H "Metadata-Flavor: Google', {json: true}, (err, res, body) => {
-        if (err) {
-            console.log(err);
-            response = err;
-        } else {
-            console.log(body);
-            response = body;
-        }
-    });*/
-
     pool.query('SELECT NOW() AS now', (error, results, fields) => {
-        //callback(error, results);
         res.send(results);
-        //res.send(results);
     });
 }
 
@@ -117,11 +85,27 @@ function getResult(req, res) {
 }
 
 function postResult(req, res) {
-    res.status(404);
-    res.send('Not implemented yet');
+    const homeTeamScore = JSON.parse(req.body).homeTeamScore;
+    const visitorTeamScore = JSON.parse(req.body).visitorTeamScore;
+    const reservationId = JSON.parse(req.body).reservationId;
+
+    if (!isEmpty(homeTeamScore) && !isEmpty(visitorTeamScore) && !isEmpty(reservationId)) {
+        const insertQuery = `INSERT INTO result(homeTeamScore, visitorTeamScore, reservationId) VALUES(${homeTeamScore},${visitorTeamScore},${reservationId})`;
+        pool.query(insertQuery); //TODO: handle result with callback
+
+        res.status(201);
+        res.send("Executed Query " + insertQuery);
+    } else {
+        res.status(400);
+        res.send('400 - Bad Request');
+    }
 }
 
 exports.entrypoint = function (req, res) {
     // Some request processing/verification/logging here
     router.onRequest(req, res);
 };
+
+function isEmpty(value) {
+    return (value == null || value.length === 0);
+}
