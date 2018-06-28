@@ -46,3 +46,7 @@ exports.postResult = function (req, res) {
         errorHandler.sendResponseBadRequest(res, 'homeTeamScore, visitorTeamScore, reservationId cant be empty');
     }
 };
+
+function isEmpty(value) {
+    return (value == null || value.length === 0);
+}
