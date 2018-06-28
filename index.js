@@ -64,7 +64,12 @@ function getKickerbox(req, res) {
 }
 
 function getResults(req, res) {
-    res.send(mockedResults);
+    pool.query('select * from result;', (error, results) => {
+        if (error) {
+            console.log(error);
+        }
+        res.send(results);
+    });
 }
 
 function testDb(req, res) {
@@ -74,14 +79,12 @@ function testDb(req, res) {
 }
 
 function getResult(req, res) {
-    let result = mockedResults[req.params.id];
-
-    if (result) {
-        res.status(200);
-        res.send(result);
-    }
-    res.status(404);
-    res.send('returns a specific result');
+    pool.query(`select * from result where id=${req.params.id};`, (error, results) => {
+        if (error) {
+            console.log(error);
+        }
+        res.send(results);
+    });
 }
 
 function postResult(req, res) {
@@ -93,8 +96,14 @@ function postResult(req, res) {
         const insertQuery = `INSERT INTO result(homeTeamScore, visitorTeamScore, reservationId) VALUES(${homeTeamScore},${visitorTeamScore},${reservationId})`;
         pool.query(insertQuery); //TODO: handle result with callback
 
+        let result = {
+            homeTeamScore: homeTeamScore,
+            visitorTeamScore: visitorTeamScore,
+            reservationId: reservationId
+        };
+
         res.status(201);
-        res.send("Executed Query " + insertQuery);
+        res.send(result);
     } else {
         res.status(400);
         res.send('400 - Bad Request');
