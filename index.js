@@ -27,12 +27,6 @@ let kickerboxes = [
     {id: 2, name: 'AustriaKicker', location: 'Alpenhotel Montafon', model: 'R2-D2'}
 ];
 
-let notFoundMsg = {
-    httpStatus: 404,
-    errorCode: 'NotFound',
-    stacktrace: '..'
-};
-
 function handleError(req, res) {
     res.status(404);
     res.setHeader('content-type', 'text/html');
@@ -54,26 +48,28 @@ function getKickerbox(req, res) {
     if (kickerbox) {
         res.status(200);
         res.send(kickerbox);
+    } else {
+        sendResponseNotFound(res, req.params.id);
     }
-    res.status(404);
-    res.send(notFoundMsg);
 }
 
 function getResults(req, res) {
     pool.query('select * from result;', (error, results) => {
         if (error) {
-            console.log(error);
+            sendResponseBadRequest(res, error);
+        } else {
+            res.send(results);
         }
-        res.send(results);
     });
 }
 
 function getResult(req, res) {
     pool.query(`select * from result where id=${req.params.id};`, (error, results) => {
         if (error) {
-            console.log(error);
+            sendResponseBadRequest(res, error);
+        } else {
+            res.send(results);
         }
-        res.send(results);
     });
 }
 
@@ -84,37 +80,42 @@ function postResult(req, res) {
 
     if (!isEmpty(homeTeamScore) && !isEmpty(visitorTeamScore) && !isEmpty(reservationId)) {
         const insertQuery = `INSERT INTO result(homeTeamScore, visitorTeamScore, reservationId) VALUES(${homeTeamScore},${visitorTeamScore},${reservationId})`;
-        pool.query(insertQuery); //TODO: handle result with callback
+        pool.query(insertQuery, (error, results) => {
+            if (error) {
+                sendResponseBadRequest(res, error);
+            } else {
+                let result = {
+                    homeTeamScore: homeTeamScore,
+                    visitorTeamScore: visitorTeamScore,
+                    reservationId: reservationId
+                };
 
-        let result = {
-            homeTeamScore: homeTeamScore,
-            visitorTeamScore: visitorTeamScore,
-            reservationId: reservationId
-        };
-
-        res.status(201);
-        res.send(result);
+                res.status(201);
+                res.send(result);
+            }
+        });
     } else {
-        res.status(400);
-        res.send('400 - Bad Request');
+        sendResponseBadRequest(res, 'homeTeamScore, visitorTeamScore, reservationId cant be empty');
     }
 }
 
 function getChallenges(req, res) {
     pool.query('select * from challenge;', (error, results) => {
         if (error) {
-            console.log(error);
+            sendResponseBadRequest(res, error);
+        } else {
+            res.send(results);
         }
-        res.send(results);
     });
 }
 
 function getChallenge(req, res) {
     pool.query(`select * from challenge where id=${req.params.id};`, (error, results) => {
         if (error) {
-            console.log(error);
+            sendResponseBadRequest(res, error);
+        } else {
+            res.send(results);
         }
-        res.send(results);
     });
 }
 
@@ -125,19 +126,22 @@ function postChallenge(req, res) {
 
     if (!isEmpty(challengerId) && !isEmpty(challengeeId) && !isEmpty(status)) {
         const insertQuery = `INSERT INTO challenge(challengerId, challengeeId, status, dateOfChallenge) VALUES(${challengerId},${challengeeId},'${status}', NOW());`;
-        pool.query(insertQuery); //TODO: handle result with callback
+        pool.query(insertQuery, (error, results) => {
+            if (error) {
+                sendResponseBadRequest(res, error);
+            } else {
+                let result = {
+                    challengerId: challengerId,
+                    challengeeId: challengeeId,
+                    status: status
+                };
 
-        let result = {
-            challengerId: challengerId,
-            challengeeId: challengeeId,
-            status: status
-        };
-
-        res.status(201);
-        res.send(insertQuery);
+                res.status(201);
+                res.send(result);
+            }
+        });
     } else {
-        res.status(400);
-        res.send('400 - Bad Request');
+        sendResponseBadRequest(res, 'challengerId, challengeeId, status cant be empty');
     }
 }
 
@@ -146,21 +150,51 @@ function putChallenge(req, res) {
 
     if (!isEmpty(status)) {
         const updateQuery = `UPDATE challenge SET status='${status}' WHERE id=${req.params.id};`;
-        pool.query(updateQuery); //TODO: handle result with callback
-
-        res.status(201);
-        res.send('updated');
+        pool.query(updateQuery, (error, results) => {
+            if (error) {
+                sendResponseBadRequest(res, error);
+            } else {
+                res.status(200);
+                res.send(results);
+            }
+        });
     } else {
-        res.status(400);
-        res.send('400 - Bad Request');
+        sendResponseBadRequest(res, 'status cant be empty');
     }
 }
 
 exports.entrypoint = function (req, res) {
     // Some request processing/verification/logging here
+    console.log(req);
     router.onRequest(req, res);
 };
 
 function isEmpty(value) {
     return (value == null || value.length === 0);
+}
+
+function sendResponseBadRequest(res, error) {
+    let badRequestMsg = {
+        httpStatus: 400,
+        errorCode: 'BadRequest',
+        stacktrace: error
+    };
+
+    console.log(badRequestMsg);
+
+    res.status(400);
+    res.send(badRequestMsg);
+}
+
+function sendResponseNotFound(res, notFound) {
+    let notFoundMsg = {
+        httpStatus: 404,
+        errorCode: 'NotFound',
+        stacktrace: `Unable to find: ${notFound}`
+    };
+
+    console.log(notFoundMsg);
+
+    res.status(404);
+    res.send(notFoundMsg);
 }
