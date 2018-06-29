@@ -40,12 +40,7 @@ exports.pool = mysql.createPool({
 function handleError(req, res) {
     res.status(404);
     res.setHeader('content-type', 'text/html');
-    res.send('<b>Usage:</b></br>\n' +
-        '   GET  /api/kickerbox       returns all kickerboxes</br> \n' +
-        '   GET  /api/kickerbox/:id   returns a specific kickerbox</br></br> \n' +
-        '   GET  /api/result          returns all results</br> \n' +
-        '   GET  /api/result/:id      returns a specific result</br> \n' +
-        '   POST /api/result/         post a new result</br>');
+    res.sendFile(__dirname + '/404.html');
 }
 
 exports.entrypoint = function (req, res) {
