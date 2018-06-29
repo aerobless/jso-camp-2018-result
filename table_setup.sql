@@ -6,7 +6,7 @@ CREATE TABLE result (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   homeTeamScore INT,
   visitorTeamScore INT,
-  reservationId INT
+  reservationId BIGINT
 );
 
 -- CREATE challenge table
