@@ -32,20 +32,24 @@ exports.postResult = function (req, res) {
             if (error) {
                 errorHandler.sendResponseBadRequest(res, error);
             } else {
-                let result = {
-                    homeTeamScore: homeTeamScore,
-                    visitorTeamScore: visitorTeamScore,
-                    reservationId: reservationId
-                };
-
-                res.status(201);
-                res.send(result);
+                sendResponseWithInsertedEntity(res);
             }
         });
     } else {
         errorHandler.sendResponseBadRequest(res, 'homeTeamScore, visitorTeamScore, reservationId cant be empty');
     }
 };
+
+function sendResponseWithInsertedEntity(res) {
+    index.pool.query(`select * from result where id=LAST_INSERT_ID();`, (error, results) => {
+        if (error) {
+            errorHandler.sendResponseBadRequest(res, error);
+        } else {
+            res.status(201);
+            res.send(results);
+        }
+    });
+}
 
 function isEmpty(value) {
     return (value == null || value.length === 0);

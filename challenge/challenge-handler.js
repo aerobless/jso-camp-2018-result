@@ -32,14 +32,7 @@ exports.postChallenge = function (req, res) {
             if (error) {
                 errorHandler.sendResponseBadRequest(res, error);
             } else {
-                let result = {
-                    challengerId: challengerId,
-                    challengeeId: challengeeId,
-                    status: status
-                };
-
-                res.status(201);
-                res.send(result);
+                sendResponseWithInsertedEntity(res);
             }
         });
     } else {
@@ -47,23 +40,45 @@ exports.postChallenge = function (req, res) {
     }
 };
 
+function sendResponseWithInsertedEntity(res) {
+    index.pool.query(`select * from challenge where id=LAST_INSERT_ID();`, (error, results) => {
+        if (error) {
+            errorHandler.sendResponseBadRequest(res, error);
+        } else {
+            res.status(201);
+            res.send(results);
+        }
+    });
+}
+
 exports.putChallenge = function (req, res) {
     const status = JSON.parse(req.body).status.toUpperCase();
+    const challengeId = req.params.id;
 
     if (!isEmpty(status)) {
-        const updateQuery = `UPDATE challenge SET status='${status}' WHERE id=${req.params.id};`;
+        const updateQuery = `UPDATE challenge SET status='${status}' WHERE id=${challengeId};`;
         index.pool.query(updateQuery, (error, results) => {
             if (error) {
                 errorHandler.sendResponseBadRequest(res, error);
             } else {
-                res.status(200);
-                res.send(results);
+                sendResponseWithUpdatedEntity(res, challengeId);
             }
         });
     } else {
         errorHandler.sendResponseBadRequest(res, 'status cant be empty');
     }
 };
+
+function sendResponseWithUpdatedEntity(res, id) {
+    index.pool.query(`select * from challenge where id=${id}`, (error, results) => {
+        if (error) {
+            errorHandler.sendResponseBadRequest(res, error);
+        } else {
+            res.status(200);
+            res.send(results);
+        }
+    });
+}
 
 function isEmpty(value) {
     return (value == null || value.length === 0);
