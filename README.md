@@ -1,5 +1,6 @@
 # jso-camp-2018-results
 
+A REST endpoint for the JSO Camp Kickerbox App made with [Google Cloud Functions](https://cloud.google.com/functions).
 
 **Local install:**
 
